@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import throwing.ThrowingRunnable;
 
-public abstract class Generator<T> implements Iterable<T>, Iterator<T>
+public abstract class Generator<T> implements Iterator<T>
 {
 	private Lock lock = null;
 	private Lock lock2 = null;
@@ -42,12 +42,6 @@ public abstract class Generator<T> implements Iterable<T>, Iterator<T>
 			}
 		});
 		execution.setDaemon(true);
-	}
-	
-	@Override
-	public final Iterator<T> iterator()
-	{
-		return this;
 	}
 	
 	@Override
@@ -120,7 +114,7 @@ public abstract class Generator<T> implements Iterable<T>, Iterator<T>
 	 * infinite Generators.
 	 */
 	@Override
-	public void forEach(Consumer<? super T> action)
+	public void forEachRemaining(Consumer<? super T> action)
 	{
 		Objects.requireNonNull(action);
 		if(!hasNext())
