@@ -17,7 +17,7 @@ import throwing.ThrowingRunnable;
  * @author ratha
  *
  * @param <T>
- *            the type of elements produced by this Generator
+ *            The type of elements produced by this Generator
  */
 public abstract class Generator<T> implements Iterator<T>
 {
@@ -128,7 +128,7 @@ public abstract class Generator<T> implements Iterator<T>
 	 * Yield an element from this generator
 	 * 
 	 * @param elem
-	 *            the element yielded from this generator
+	 *            The element yielded from this generator
 	 */
 	protected final void yield(T elem)
 	{

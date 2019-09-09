@@ -29,7 +29,7 @@ public class GeneratorUse
 					g.nextIfPresent().ifPresent(i -> System.out.println("Consumer 1: " + i));
 				}
 			}
-		}, "Consumer 1");
+		});
 		Thread cons2 = new Thread(new Runnable()
 		{
 			@Override
@@ -46,7 +46,7 @@ public class GeneratorUse
 						throw new IllegalStateException("termination time!");
 				});
 			}
-		}, "Consumer 2");
+		});
 		cons1.start();
 		cons2.start();
 		cons1.join();
