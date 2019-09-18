@@ -19,7 +19,7 @@ import throwing.ThrowingRunnable;
  * @param <T>
  *            The type of elements produced by this Generator
  */
-public abstract class Generator<T> implements Iterator<T>
+abstract class Generator<T> implements Iterator<T>
 {
 	/**
 	 * The currently yielded value
@@ -59,7 +59,8 @@ public abstract class Generator<T> implements Iterator<T>
 			{
 				begin.await();
 				T t = get();
-				onTermination = Optional.of(ThrowingRunnable.of(execution::join));
+				onTermination = Optional.of(() -> Throwing.run(begin::await, end::await, execution::join));
+				forEachAction = null;
 				yield(t);
 			}
 			catch(Exception unexpected)
@@ -87,7 +88,7 @@ public abstract class Generator<T> implements Iterator<T>
 	 * @return {@code true} if the generator has more elements
 	 */
 	@Override
-	public final boolean hasNext()
+	public synchronized boolean hasNext()
 	{
 		return onTermination.isEmpty();
 	}
@@ -99,9 +100,9 @@ public abstract class Generator<T> implements Iterator<T>
 	 * @return an {@link Optional} representing the next element in the
 	 *         generator if present, else {@link Optional#empty}
 	 */
-	public synchronized final Optional<T> nextIfPresent()
+	public synchronized final GeneratorValue<T> nextIfPresent()
 	{
-		return hasNext() ? Optional.ofNullable(next()) : Optional.empty();
+		return hasNext() ? GeneratorValue.of(next()) : GeneratorValue.of();
 	}
 	
 	/**
@@ -142,6 +143,14 @@ public abstract class Generator<T> implements Iterator<T>
 	}
 	
 	/**
+	 * Stops the execution of the thread.
+	 */
+	protected final void done()
+	{
+		execution.interrupt();
+	}
+	
+	/**
 	 * Consumes all remaining elements possible. Obviously, don't use on
 	 * infinite Generators.
 	 * 
@@ -158,6 +167,8 @@ public abstract class Generator<T> implements Iterator<T>
 		if(!hasNext())
 			throw new IllegalStateException("Exhausted elements before calling forEach!");
 		forEachAction = action;
+		if(executing.compareAndSet(false, true))
+			execution.start();
 		Throwing.run(begin::await, end::await);
 		onTermination.ifPresent(Runnable::run);
 	}

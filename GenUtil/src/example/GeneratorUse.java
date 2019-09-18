@@ -1,15 +1,15 @@
 package example;
 
-import generator.Generator;
+import generator.EagerGenerator;
 
 public class GeneratorUse
 {
 	public static void main(String[] args) throws InterruptedException
 	{
-		Generator<Integer> g = new Generator<>()
+		EagerGenerator<Integer> g = new EagerGenerator<>()
 		{
 			@Override
-			protected Integer get()
+			protected void get()
 			{
 				int n = 0;
 				while(true)
@@ -26,7 +26,7 @@ public class GeneratorUse
 			{
 				for(int j = 0; j < 20; j++)
 				{
-					g.nextIfPresent().ifPresent(i -> System.out.println("Consumer 1: " + i));
+					System.out.println("1: "+g.iterator().next());
 				}
 			}
 		});
@@ -37,12 +37,12 @@ public class GeneratorUse
 			{
 				for(int j = 0; j < 20; j++)
 				{
-					g.nextIfPresent().ifPresent(i -> System.out.println("Consumer 2: " + i));
+					System.out.println("2: "+g.iterator().next());
 				}
-				g.forEachRemaining(i ->
+				g.forEach(i ->
 				{
-					System.out.println("Consumer 2: " + i);
-					if(i >= 60)
+					System.out.println("2 to 60: " + i);
+					if(i >= 600)
 						throw new IllegalStateException("termination time!");
 				});
 			}
@@ -52,7 +52,5 @@ public class GeneratorUse
 		cons1.join();
 		cons2.join();
 		
-		g.nextIfPresent().ifPresentOrElse(System.out::println,
-			() -> System.out.println("No elements left!"));
 	}
 }
