@@ -2,12 +2,12 @@ package generator;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class LazyGenerator<T> implements Iterable<T>
 {
 	private final Generator<T> generator;
-	private final AtomicBoolean hasNext = new AtomicBoolean(true);
+	private final Iterator<T> iterator;
+	private volatile boolean hasNext = true;
 	
 	public LazyGenerator()
 	{
@@ -17,21 +17,44 @@ public abstract class LazyGenerator<T> implements Iterable<T>
 			protected T get()
 			{
 				LazyGenerator.this.get();
-				hasNext.set(false);
+				hasNext = false;
 				return null;
 			}
 			
 			@Override
 			public boolean hasNext()
 			{
-				return hasNext.get() && super.hasNext();
+				return hasNext && super.hasNext();
 			}
 		};
-	}
-	
-	protected void done()
-	{
-		generator.done();
+		
+		this.iterator = new Iterator<T>()
+		{
+			private GeneratorValue<T> value = GeneratorValue.empty();
+			
+			@Override
+			public boolean hasNext()
+			{
+				if(!generator.hasNext())
+					return false;
+				boolean ret;
+				synchronized(this)
+				{
+					if(value.missing())
+						value = generator.nextIfPresent();
+					ret = hasNext && value.present();
+				}
+				return ret;
+			}
+
+			@Override
+			public synchronized T next()
+			{
+				if(!hasNext())
+					throw new NoSuchElementException();
+				return value.getAndClear();
+			}
+		};
 	}
 	
 	protected void yield(T t)
@@ -44,28 +67,6 @@ public abstract class LazyGenerator<T> implements Iterable<T>
 	@Override
 	public Iterator<T> iterator()
 	{
-		return new Iterator<T>()
-		{
-			GeneratorValue<T> value = GeneratorValue.of();
-			
-			@Override
-			public synchronized boolean hasNext()
-			{
-				var trying = generator.hasNext();
-				if(!trying)
-					return false;
-				if(value.missing())
-					value = generator.nextIfPresent();
-				return hasNext.get() && value.present();
-			}
-
-			@Override
-			public synchronized T next()
-			{
-				if(!hasNext())
-					throw new NoSuchElementException();
-				return value.getAndClear();
-			}
-		};
+		return iterator;
 	}
 }

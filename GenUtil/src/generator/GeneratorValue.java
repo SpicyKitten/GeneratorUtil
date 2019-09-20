@@ -19,7 +19,7 @@ public class GeneratorValue<T>
 		this.value = value;
 	}
 	
-	public static <T> GeneratorValue<T> of()
+	public static <T> GeneratorValue<T> empty()
 	{
 		return new GeneratorValue<>(Presence.MISSING);
 	}

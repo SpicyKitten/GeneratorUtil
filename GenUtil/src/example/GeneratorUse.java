@@ -1,32 +1,34 @@
 package example;
 
-import generator.EagerGenerator;
+import generator.LazyGenerator;
 
 public class GeneratorUse
 {
 	public static void main(String[] args) throws InterruptedException
 	{
-		EagerGenerator<Integer> g = new EagerGenerator<>()
+		LazyGenerator<Integer> gen = new LazyGenerator<>()
 		{
 			@Override
 			protected void get()
 			{
 				int n = 0;
-				while(true)
+				while(n < 601)
 				{
 					yield(n);
 					n++;
 				}
+				System.out.println("Executed");
 			}
 		};
+		var g = gen.iterator();
 		Thread cons1 = new Thread(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				for(int j = 0; j < 20; j++)
+				for(int j = 0; j < 300; j++)
 				{
-					System.out.println("1: "+g.iterator().next());
+					System.out.println("1: "+g.next());
 				}
 			}
 		});
@@ -35,22 +37,21 @@ public class GeneratorUse
 			@Override
 			public void run()
 			{
-				for(int j = 0; j < 20; j++)
+				for(int j = 0; j < 300; j++)
 				{
-					System.out.println("2: "+g.iterator().next());
+					System.out.println("2: "+g.next());
 				}
-				g.forEach(i ->
-				{
-					System.out.println("2 to 60: " + i);
-					if(i >= 600)
-						throw new IllegalStateException("termination time!");
-				});
+//				while(g.hasNext())
+//				{
+//					System.out.println("2: "+g.nextIfPresent().getAndClear());
+//				}
 			}
 		});
 		cons1.start();
 		cons2.start();
+		System.out.println("GEN~: "+gen.iterator().next());
 		cons1.join();
 		cons2.join();
-		
+		System.out.println(gen.iterator().hasNext());
 	}
 }

@@ -19,7 +19,7 @@ import throwing.ThrowingRunnable;
  * @param <T>
  *            The type of elements produced by this Generator
  */
-abstract class Generator<T> implements Iterator<T>
+public abstract class Generator<T> implements Iterator<T>
 {
 	/**
 	 * The currently yielded value
@@ -60,6 +60,8 @@ abstract class Generator<T> implements Iterator<T>
 				begin.await();
 				T t = get();
 				onTermination = Optional.of(() -> Throwing.run(begin::await, end::await, execution::join));
+				if(forEachAction != null)
+					forEachAction.accept(t);
 				forEachAction = null;
 				yield(t);
 			}
@@ -88,21 +90,21 @@ abstract class Generator<T> implements Iterator<T>
 	 * @return {@code true} if the generator has more elements
 	 */
 	@Override
-	public synchronized boolean hasNext()
+	public boolean hasNext()
 	{
 		return onTermination.isEmpty();
 	}
 	
 	/**
-	 * Returns an {@link Optional} representing the next element in the
+	 * Returns a {@link GeneratorValue} representing the next element in the
 	 * generator, if present
 	 *
-	 * @return an {@link Optional} representing the next element in the
-	 *         generator if present, else {@link Optional#empty}
+	 * @return a {@link GeneratorValue} representing the next element in the
+	 *         generator if present, else {@link GeneratorValue#empty}
 	 */
 	public synchronized final GeneratorValue<T> nextIfPresent()
 	{
-		return hasNext() ? GeneratorValue.of(next()) : GeneratorValue.of();
+		return hasNext() ? GeneratorValue.of(next()) : GeneratorValue.empty();
 	}
 	
 	/**
@@ -140,14 +142,6 @@ abstract class Generator<T> implements Iterator<T>
 		}
 		curr = elem;
 		Throwing.run(end::await, begin::await);
-	}
-	
-	/**
-	 * Stops the execution of the thread.
-	 */
-	protected final void done()
-	{
-		execution.interrupt();
 	}
 	
 	/**
